@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="human.js"></script>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script>
+const human = new Human.Human();
+const video = document.querySelector('video');
+const result = document.querySelector('canvas');
+
+async function getMedia() {
+    try {
+        let stream = await window.navigator.mediaDevices.getUserMedia({video:true, sound:false});
+        video.srcObject = stream;
+        human.video(video);
+    } catch (err) {}
+};
+
+async function faceCheck(){
+    let res = human.next();
+    console.log(res);
+    human.draw.face(result, res, {});
+}
+    </script>
+    <title>Document</title>
+</head>
+<body>
+    <video autoplay></video>
+    <canvas></canvas>
+    <script>
+
+    </script>
+    <button onclick="getMedia()">camera</button>
+    <button onclick="faceCheck()">detect</button>
+</body>
+</html>

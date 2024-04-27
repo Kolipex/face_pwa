@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="/assets/js/human.js"></script>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <script>
+        //const pwa = ServiceWorkerContainer.register('pwa.js');
+    </script>
+    <title>Escaneo</title>
+</head>
+<body>
+    <main class="scan">
+        <!-- <video autoplay></video>
+        <canvas></canvas>
+        <script>
+    
+        </script>
+        <button onclick="getMedia()">camera</button>
+        <button onclick="faceCheck()">detect</button> -->
+        <canvas id="canvas" style="padding: 8px"></canvas>
+        <canvas id="source" style="padding: 8px"></canvas>
+        <video id="video" playsinline></video>
+
+        <pre id="log" style="padding: 8px"></pre>
+        <div id="match" style="display: none; padding: 8px">
+
+        <label for="name">name:</label>
+        <input id="name" type="text" value="" style="height: 16px; border: none; padding: 2px; margin-left: 8px">
+        <button id="save" style="background-color: royalblue">save</button>
+        <button id="delete" style="background-color: lightcoral">delete</button>
+        <button id="retry" style="background-color: darkslategray">Reset</button>
+        <div id="ok" style="display:hidden"></div>
+        <script src="/assets/js/faceID.js"></script>
+    </main>
+</body>
+</html>

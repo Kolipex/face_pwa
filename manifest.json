@@ -1,0 +1,12 @@
+{
+    "name": "PWA",
+    "icons": [
+      {
+        "src": "assets/img/pwa.png",
+        "type": "image/png",
+        "sizes": "512x512"
+      }
+    ],
+    "start_url":"http://127.0.0.1",
+    "display":"fullscreen"
+  }

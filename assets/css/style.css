@@ -1,0 +1,64 @@
+*{
+    --accent:#24E;
+    --accent-text:#FFF;
+    font-size: x-large;
+}
+
+body{
+    margin:0;
+    width:100dvw;
+    height:100dvh;
+    accent-color: var(--accent);
+    box-sizing: border-box;
+    font-family: helvetica;
+    text-decoration: none;
+}
+
+input, button{
+    border-radius: 1ch;
+    background: #2244EE22;
+    padding: 1ch 1lh;
+    border: none;
+}
+
+input[type="submit"], button{
+    background: var(--accent);
+    color: var(--accent-text);
+    text-transform: uppercase;
+}
+
+.login{
+    color: var(--accent);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 20px;
+    gap: 1ch;
+}
+
+.login>img{
+    aspect-ratio: 1;
+    align-self: center;
+    width: 50vw;
+}
+
+.login a, .login button{
+    width: 100%;
+}
+
+.scan{
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 20px;
+    gap: 1ch;
+    video{
+        display: none;
+        width:100%;
+    }
+    canvas{
+        max-height: 500px;
+        border-radius: 1ch;
+        background: grey;
+    }
+}
