@@ -46,6 +46,14 @@ input[type="submit"], button{
     width: 100%;
 }
 
+table{
+    border:1px solid black;
+    text-align: center;
+    button{
+        all:unset;
+    }
+}
+
 .scan{
     display: flex;
     flex-direction: column;
@@ -60,5 +68,18 @@ input[type="submit"], button{
         max-height: 500px;
         border-radius: 1ch;
         background: grey;
+    }
+    #source{
+        display:none;
+    }
+    #match{
+        display: flex;
+        flex-direction: column;
+        gap:1ch;
+        display: none;
+        padding: 8px;
+    }
+    #db{
+        font-size: small;
     }
 }

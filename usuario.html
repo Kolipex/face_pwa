@@ -13,27 +13,23 @@
 </head>
 <body>
     <main class="scan">
-        <!-- <video autoplay></video>
-        <canvas></canvas>
-        <script>
-    
-        </script>
-        <button onclick="getMedia()">camera</button>
-        <button onclick="faceCheck()">detect</button> -->
         <canvas id="canvas" style="padding: 8px"></canvas>
         <canvas id="source" style="padding: 8px"></canvas>
         <video id="video" playsinline></video>
+        <div id="ok"></div>
 
-        <pre id="log" style="padding: 8px"></pre>
-        <div id="match" style="display: none; padding: 8px">
+        <!-- <pre id="log" style="padding: 8px"></pre> -->
 
-        <label for="name">name:</label>
-        <input id="name" type="text" value="" style="height: 16px; border: none; padding: 2px; margin-left: 8px">
-        <button id="save" style="background-color: royalblue">save</button>
-        <button id="delete" style="background-color: lightcoral">delete</button>
-        <button id="retry" style="background-color: darkslategray">Reset</button>
-        <div id="ok" style="display:hidden"></div>
-        <script src="/assets/js/faceID.js"></script>
+        <div id="match">
+            <span id="best-match"></span>
+            <label for="name">name:</label>
+            <input id="name" type="text" value="">
+            <button id="save" style="background-color: royalblue">Guardar Nuevo</button>
+            <button id="delete" style="background-color: lightcoral; display:none">Borrar</button>
+            <button id="retry" style="background-color: darkslategray">Volver</button>
+            <table id="db"></table>
+            <script src="/assets/js/faceID.js"></script>
+        </div>
     </main>
 </body>
 </html>

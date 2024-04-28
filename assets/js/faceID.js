@@ -68,7 +68,8 @@ indexDb = {
     const newRecord = {
       name: faceRecord.name,
       descriptor: faceRecord.descriptor,
-      image: faceRecord.image
+      image: faceRecord.image,
+      dt: faceRecord.dt
     } // omit id as its autoincrement
     db.transaction([table], "readwrite").objectStore(table).put(newRecord);
     log("save:", newRecord);
@@ -97,7 +98,7 @@ const humanConfig = {
     // insightface: { enabled: true, modelPath: 'https://vladmandic.github.io/insightface/models/insightface-mobilenet-swish.json' }, // alternative model
     iris: { enabled: true }, // needed to determine gaze direction
     emotion: { enabled: false }, // not needed
-    antispoof: { enabled: false }, // enable optional antispoof module
+    antispoof: { enabled: true }, // enable optional antispoof module
     liveness: { enabled: true } // enable optional liveness module
   },
   body: { enabled: false },
@@ -128,14 +129,10 @@ const ok = {
   faceCount: { status: false, val: 0 },
   faceConfidence: { status: false, val: 0 },
   facingCenter: { status: false, val: 0 },
-  lookingCenter: { status: false, val: 0 },
-  blinkDetected: { status: false, val: 0 },
   faceSize: { status: false, val: 0 },
   antispoofCheck: { status: false, val: 0 },
   livenessCheck: { status: false, val: 0 },
   distance: { status: false, val: 0 },
-  age: { status: false, val: 0 },
-  gender: { status: false, val: 0 },
   timeout: { status: true, val: 0 },
   descriptor: { status: false, val: 0 },
   elapsedMs: { status: undefined, val: 0 }, // total time while waiting for valid face
@@ -144,18 +141,15 @@ const ok = {
 };
 
 const allOk = () =>
+  ok.elapsedMs.val > 2000 &&
   ok.faceCount.status &&
   ok.faceSize.status &&
-  //ok.blinkDetected.status &&
   ok.facingCenter.status &&
-  ok.lookingCenter.status &&
   ok.faceConfidence.status &&
   ok.antispoofCheck.status &&
   ok.livenessCheck.status &&
-  ok.distance.status &&
-  ok.descriptor.status &&
-  ok.age.status &&
-  ok.gender.status;
+  //ok.distance.status &&
+  ok.descriptor.status;
 
 const current = { face: null, record: null }; // current face record and matched database record
 
@@ -172,6 +166,7 @@ const human = new H.Human(humanConfig); // create instance of human with overrid
 human.env.perfadd = false; // is performance data showing instant or total values
 human.draw.options.font = 'small-caps 18px "Lato"'; // set font used to draw labels when using draw methods
 human.draw.options.lineHeight = 20;
+human.draw.options.drawLabels = false;
 
 const dom = {
   // grab instances of dom objects so we dont have to look them up later
@@ -180,12 +175,14 @@ const dom = {
   log: document.getElementById("log"),
   fps: document.getElementById("fps"),
   match: document.getElementById("match"),
+  best: document.getElementById("best-match"),
   name: document.getElementById("name"),
   save: document.getElementById("save"),
   delete: document.getElementById("delete"),
   retry: document.getElementById("retry"),
   source: document.getElementById("source"),
-  ok: document.getElementById("ok")
+  ok: document.getElementById("ok"),
+  db: document.getElementById("db")
 };
 const timestamp = { detect: 0, draw: 0 }; // holds information used to calculate performance and possible memory leaks
 let startTime = 0;
@@ -201,10 +198,10 @@ async function webCam() {
   // @ts-ignore resizeMode is not yet defined in tslib
   const cameraOptions = {
     audio: false,
-    video: { facingMode: "user", resizeMode: "none", width: { ideal: document.body.clientWidth }}
+    video: { facingMode: "user", resizeMode: "none", width: { ideal: document.body.clientWidth } }
   };
   const stream = await navigator.mediaDevices.getUserMedia(cameraOptions);
-  const ready = new Promise(resolve => {dom.video.onloadeddata = () => resolve(true)});
+  const ready = new Promise(resolve => { dom.video.onloadeddata = () => resolve(true) });
   dom.video.srcObject = stream;
   void dom.video.play();
   await ready;
@@ -251,6 +248,38 @@ function drawValidationTests() {
   }
 }
 
+async function drawDB() {
+  dom.db.innerHTML = '<tr><th>ID</th><th>Nombre</th><th></th></tr>';
+  let db = await indexDb.load();
+  for (const entry of db) {
+      let row = document.createElement("tr");
+      dom.db.appendChild(row);
+
+      let id = document.createElement("td");
+      id.innerText = entry.id;
+      row.appendChild(id);
+
+      let name = document.createElement("td");
+      name.innerText = entry.name;
+      row.appendChild(name);
+
+      // let dt = document.createElement("td");
+      // dt.innerText = entry.dt?.toISOString();
+      // row.appendChild(dt);
+
+      let del = document.createElement("td");
+      let btn = document.createElement("button");
+      btn.innerText = '🗑️';
+      btn.onclick =()=>{
+        indexDb.remove(entry);
+        drawDB();
+      }
+      del.appendChild(btn);
+      row.appendChild(del);
+  }
+}
+
+
 async function validationLoop() {
   // main screen refresh loop
   const interpolated = human.next(human.result); // smoothen result using last-known results
@@ -264,14 +293,7 @@ async function validationLoop() {
   if (ok.faceCount.status) {
     // skip the rest if no face
     const gestures = Object.values(human.result.gesture).map(gesture => gesture.gesture); // flatten all gestures
-    if (gestures.includes("blink left eye") || gestures.includes("blink right eye"))
-      blink.start = human.now(); // blink starts when eyes get closed
-    if (blink.start > 0 && !gestures.includes("blink left eye") && !gestures.includes("blink right eye"))
-      blink.end = human.now(); // if blink started how long until eyes are back open
-    ok.blinkDetected.status = ok.blinkDetected.status || (Math.abs(blink.end - blink.start) > options.blinkMin && Math.abs(blink.end - blink.start) < options.blinkMax);
-    if (ok.blinkDetected.status && blink.time === 0) blink.time = Math.trunc(blink.end - blink.start);
     ok.facingCenter.status = gestures.includes("facing center");
-    ok.lookingCenter.status = gestures.includes("looking center"); // must face camera and look at camera
     ok.faceConfidence.val = human.result.face[0].faceScore || human.result.face[0].boxScore || 0;
     ok.faceConfidence.status = ok.faceConfidence.val >= options.minConfidence;
     ok.antispoofCheck.val = human.result.face[0].real || 0;
@@ -284,10 +306,6 @@ async function validationLoop() {
     ok.distance.status = ok.distance.val >= options.distanceMin && ok.distance.val <= options.distanceMax;
     ok.descriptor.val = human.result.face[0].embedding?.length || 0;
     ok.descriptor.status = ok.descriptor.val > 0;
-    ok.age.val = human.result.face[0].age || 0;
-    ok.age.status = ok.age.val > 0;
-    ok.gender.val = human.result.face[0].genderScore || 0;
-    ok.gender.status = ok.gender.val >= options.minConfidence;
   }
   // run again
   ok.timeout.status = ok.elapsedMs.val <= options.maxTime;
@@ -309,15 +327,17 @@ async function validationLoop() {
 async function saveRecords() {
   if (dom.name.value.length > 0) {
     const image = dom.canvas.getContext("2d")?.getImageData(0, 0, dom.canvas.width, dom.canvas.height);
-    const rec = {id: 0, name: dom.name.value, descriptor: current.face?.embedding, image};
+    const rec = { id: 0, name: dom.name.value, descriptor: current.face?.embedding, image, dt: new Date() };
     await indexDb.save(rec);
     log("saved face record:", rec.name, "descriptor length:", current.face?.embedding?.length);
     log("known face records:", await indexDb.count());
   } else log("invalid name");
+  main();
 }
 
 async function deleteRecord() {
   if (current.record && current.record.id > 0) await indexDb.remove(current.record);
+  main();
 }
 
 async function detectFace() {
@@ -339,11 +359,10 @@ async function detectFace() {
   const res = human.match.find(current.face.embedding, descriptors, matchOptions);
   current.record = db[res.index] || null;
   if (current.record) {
+    dom.best.innerText=`best match: [${current.record.id}] ${current.record.name} (${Math.round(1000 * res.similarity) / 10}%)`;
     log(`best match: ${current.record.name} | id: ${current.record.id} | similarity: ${Math.round(1000 * res.similarity) / 10}%`);
     dom.name.value = current.record.name;
-    dom.source.style.display = "";
-    dom.source.getContext("2d")?.putImageData(current.record.image, 0, 0);
-  }
+  }else dom.best.innerText='';
   //document.body.style.background = res.similarity > options.threshold ? "darkgreen" : "maroon";
   return res.similarity > options.threshold;
 }
@@ -353,31 +372,29 @@ async function main() {
   ok.faceCount.status = false;
   ok.faceConfidence.status = false;
   ok.facingCenter.status = false;
-  ok.blinkDetected.status = false;
+  //ok.blinkDetected.status = false;
   ok.faceSize.status = false;
   ok.antispoofCheck.status = false;
   ok.livenessCheck.status = false;
-  ok.age.status = false;
-  ok.gender.status = false;
+  //ok.age.status = false;
+  //ok.gender.status = false;
   ok.elapsedMs.val = 0;
+  dom.ok.style.display = "block";
   dom.match.style.display = "none";
-  dom.retry.style.display = "none";
-  dom.source.style.display = "none";
   //dom.canvas.style.height = "50%";
   //document.body.style.background = "black";
   await webCam();
   await detectionLoop(); // start detection loop
   startTime = human.now();
   current.face = await validationLoop(); // start validation loop
+
   dom.canvas.width = current.face?.tensor?.shape[1] || options.minSize;
   dom.canvas.height = current.face?.tensor?.shape[0] || options.minSize;
-  dom.source.width = dom.canvas.width;
-  dom.source.height = dom.canvas.height;
   dom.canvas.style.width = "";
   dom.match.style.display = "flex";
-  dom.save.style.display = "flex";
-  dom.delete.style.display = "flex";
-  dom.retry.style.display = "block";
+  dom.ok.style.display = "none";
+  drawDB();
+
   if (!allOk()) {
     // is all criteria met?
     log("did not find valid face")
